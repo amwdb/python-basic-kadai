@@ -1,4 +1,5 @@
 top = 10
 botom = 20
 hight =5
-print((top + botom) * hight / 2)
+menseki =(top + botom) * hight / 2
+print(str(menseki) + "㎠")

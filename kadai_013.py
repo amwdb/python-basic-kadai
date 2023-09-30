@@ -3,6 +3,7 @@
 
 def purchase_item(price,tax_price):
     total_price=price*(1 + (tax_price/100))
+    total_price = int(total_price)
     print(f"商品金額は{total_price}円です。")
 
 purchase_item(500,10)

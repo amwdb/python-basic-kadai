@@ -5,26 +5,21 @@
 #Humanクラスのインスタンスを複数生成してリストに追加し、リストの要素数分だけcheck_adultメソッドを呼び出してください。
 
 class Human:
+    # 初期化とメソッドを定義する
     def __init__(self,name,age):
-        self.name = name
-        self.age = age
+        self._name = name
+        self._age = age
 
-    # メソッドを定義する
-    def set_name(self, name):
-        self.name = name
-    def set_age(self,age):
-        self.age = age
-        
     def check_adult(self):
-        if self.age >= 20:
+        if self._age >= 20:
             print("大人です")
         else:
             print("大人ではありません")
 
 # インスタンス化する
-human_names = ["侍太郎", "侍一郎", "侍二郎", "侍三郎", "侍四郎"]
-human_ages  = [36, 15, 29, 11, 12]
-
-for i in range(0,5):
-    human = Human(human_names[i],human_ages[i])
+humans_ages = []
+humans_ages.append(Human("太郎",10))
+humans_ages.append(Human("次郎",20))
+humans_ages.append(Human("三郎",30))
+for human in humans_ages:
     human.check_adult()

@@ -1,0 +1,26 @@
+import json
+import urllib.parse
+import boto3
+import os
+import sys
+import uuid
+from urllib.parse import unquote_plus
+from PIL import Image
+import PIL.Image
+
+
+def lambda_handler(event, context):
+    s3 = boto3.resource('s3')
+    #ソースS3を定義
+    bucket = 'lambdabuckettask1'
+    key = urllib.parse.unquote_plus(event['Records'][0]['s3']['object']['key'], encoding='utf-8')
+    #アップロード先S3を定義
+    bucket_re = 'lambdabuckettask1-2'
+    print(bucket)
+    print(bucket_re)
+    print(key)
+    tmpkey = key.replace('/', '')
+    download_path = '/tmp/{}{}'.format(uuid.uuid4(), tmpkey)
+    #print(download_path)
+    s3.download_file(bucket, key,download_path)
+    print('ファイルをダウンロードしました')

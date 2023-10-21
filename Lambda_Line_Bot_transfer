@@ -1,0 +1,43 @@
+import json
+import os
+import urllib.request
+import logging
+import boto3
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+translate = boto3.client('translate')
+
+LINE_CHANNEL_ACCESS_TOKEN   = os.environ['LINE_CHANNEL_ACCESS_TOKEN']
+url = 'https://api.line.me/v2/bot/message/reply'
+headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + LINE_CHANNEL_ACCESS_TOKEN
+        }
+def lambda_handler(event, context):
+    logger.info(event) #出力用
+    for message_event in json.loads(event['body'])['events']:
+        response = translate.translate_text(
+        Text = message_event['message']['text'],
+        SourceLanguageCode='ja',
+        TargetLanguageCode='en'
+        )
+        output_text = response.get('TranslatedText')
+        body = {
+            'replyToken': message_event['replyToken'],
+            'messages': [
+                {
+                    "type": message_event['message']['type'],
+                    "text": output_text,
+                    #"text": message_event['message']['text'],
+                }
+            ]
+        }
+        print(body) #出力用
+        req = urllib.request.Request(url, data = json.dumps(body).encode('utf-8'), method='POST', headers=headers) #httpを組み立てている組み立てている
+        with urllib.request.urlopen(req) as res: #reqを送信してレスポンスをresに格納する
+            logger.info(res.read().decode("utf-8")) #ネットワークを送信するときはbyte型だとutfに戻す。文字をバイト（エンコード）、バイトを文字が(デコード）)
+            
+    return {
+        'statusCode': 200, #LINEに投稿するとLambdaに。LINEに成功したNo.200を返答する必要がある。
+        'body': json.dumps('Hello from Lambda!')
+    }

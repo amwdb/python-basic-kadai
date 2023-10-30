@@ -1,0 +1,136 @@
+import json
+import os
+import urllib.request
+import logging
+import boto3
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+dynamoDB = boto3.resource('dynamodb')
+table = dynamoDB.Table("Lambda_LineEvent") # DynamoDBのテーブル名
+
+LINE_CHANNEL_ACCESS_TOKEN   = os.environ['LINE_CHANNEL_ACCESS_TOKEN']
+url = 'https://api.line.me/v2/bot/message/reply'
+headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + LINE_CHANNEL_ACCESS_TOKEN
+        }
+        
+def is_num(hoge):
+    try:
+        float(hoge)
+
+    except ValueError:
+        return False
+
+    else:
+        return True
+
+        
+def lambda_handler(event, context):
+    logger.info(event) #出力用
+    for message_event in json.loads(event['body'])['events']:
+
+        # DynamoDBへのPut処理実行
+        query_data = table.get_item(
+        Key={
+            #'id': event['id']
+            'id': "はじめ"
+            }
+        )
+        print("GetItem succeeded:")
+        # 取り出す時は
+        height = float(query_data['Item']['height'])
+        state = int(query_data['Item']['state'])
+        print(height)
+        print(state)
+
+        if state == 2:
+            Text = message_event['message']['text']
+            #hantei = isinstance(Text,(int,float))
+            if is_num(Text):
+                height = float(height)
+                Text = float(Text)
+                bmi = Text/(height*height)
+                print(bmi)
+                output_text = f"あなたのBMIは{'{:.1f}'.format(bmi)}です"
+                
+                table.put_item(
+                    Item={
+                        'id': "はじめ",
+                        'state': 0,
+                        'height': 0
+                    }
+                )
+            else:
+                table.put_item(
+                    Item={
+                        'id': "はじめ",
+                        'state': 0,
+                        'height': 0
+                    }
+                )
+                output_text = "不正な入力です"
+
+        if state == 1:
+            Text = message_event['message']['text']
+            print(type(Text))
+            #hantei = isinstance(Text,(int,float))
+            if is_num(Text):
+                output_text = "体重をキログラムで入力してください"
+                table.put_item(
+                    Item={
+                        'id': "はじめ",
+                        'state': 2,
+                        'height': Text
+                    }
+                )
+            else:
+                table.put_item(
+                    Item={
+                        'id': "はじめ",
+                        'state': 0,
+                        'height': 0
+                    }
+                )
+                output_text = "不正な入力です"
+        
+        if state == 0:
+            Text = message_event['message']['text']
+            if Text == "はじめ":
+                output_text = "身長をメートルで入力してください"
+                table.put_item(
+                    Item={
+                        'id': "はじめ",
+                        'state': 1,
+                        'height': 0
+                    }
+                )
+            else:
+                table.put_item(
+                    Item={
+                        'id': "はじめ",
+                        'state': 0,
+                        'height': 0
+                    }
+                )
+                output_text = "不正な入力です"
+                
+        body = {
+            'replyToken': message_event['replyToken'],
+            'messages': [
+                {
+                    "type": message_event['message']['type'],
+                    "text":output_text,
+                }
+            ]
+        }
+        
+        print(body) #出力用
+        req = urllib.request.Request(url, data = json.dumps(body).encode('utf-8'), method='POST', headers=headers) #httpを組み立てている組み立てている
+        with urllib.request.urlopen(req) as res: #reqを送信してレスポンスをresに格納する
+            logger.info(res.read().decode("utf-8")) #ネットワークを送信するときはbyte型だとutfに戻す。文字をバイト（エンコード）、バイトを文字が(デコード）)
+            
+    return {
+        'statusCode': 200, #LINEに投稿するとLambdaに。LINEに成功したNo.200を返答する必要がある。
+        'body': json.dumps('Hello from Lambda!')
+    }

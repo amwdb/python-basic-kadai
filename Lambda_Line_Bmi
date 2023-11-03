@@ -8,7 +8,11 @@ logger.setLevel(logging.INFO)
 dynamoDB = boto3.resource('dynamodb')
 table = dynamoDB.Table("Lambda_LineEvent") # DynamoDBのテーブル名
 
-LINE_CHANNEL_ACCESS_TOKEN   = os.environ['LINE_CHANNEL_ACCESS_TOKEN']
+#環境変数
+LINE_CHANNEL_ACCESS_TOKEN  = os.environ['LINE_CHANNEL_ACCESS_TOKEN']
+STATE_INIT = int(os.environ['STATE_INIT'])
+STATE_ASKING_HEIGHT = int(os.environ['STATE_ASKING_HEIGHT'])
+STATE_ASKING_WEIGHT = int(os.environ['STATE_ASKING_WEIGHT'])
 url = 'https://api.line.me/v2/bot/message/reply'
 headers = {
             'Content-Type': 'application/json',
@@ -42,9 +46,9 @@ def lambda_handler(event, context):
         height = float(query_data['Item']['height'])
         state = int(query_data['Item']['state'])
         print(height)
-        print(state)
-
-        if state == 2:
+        print(type(state))
+        print(type(STATE_INIT))
+        if state == STATE_ASKING_WEIGHT:
             Text = message_event['message']['text']
             #hantei = isinstance(Text,(int,float))
             if is_num(Text):
@@ -57,21 +61,21 @@ def lambda_handler(event, context):
                 table.put_item(
                     Item={
                         'id': "はじめ",
-                        'state': 0,
-                        'height': 0
+                        'state': STATE_INIT,
+                        'height': STATE_INIT
                     }
                 )
             else:
                 table.put_item(
                     Item={
                         'id': "はじめ",
-                        'state': 0,
-                        'height': 0
+                        'state': STATE_INIT,
+                        'height': STATE_INIT
                     }
                 )
                 output_text = "不正な入力です"
 
-        if state == 1:
+        if state == STATE_ASKING_HEIGHT:
             Text = message_event['message']['text']
             print(type(Text))
             #hantei = isinstance(Text,(int,float))
@@ -80,7 +84,7 @@ def lambda_handler(event, context):
                 table.put_item(
                     Item={
                         'id': "はじめ",
-                        'state': 2,
+                        'state': STATE_ASKING_WEIGHT,
                         'height': Text
                     }
                 )
@@ -88,29 +92,30 @@ def lambda_handler(event, context):
                 table.put_item(
                     Item={
                         'id': "はじめ",
-                        'state': 0,
-                        'height': 0
+                        'state': STATE_INIT,
+                        'height': STATE_INIT
                     }
                 )
                 output_text = "不正な入力です"
         
-        if state == 0:
+        if state == STATE_INIT:
             Text = message_event['message']['text']
+            print(Text)
             if Text == "はじめ":
                 output_text = "身長をメートルで入力してください"
                 table.put_item(
                     Item={
                         'id': "はじめ",
-                        'state': 1,
-                        'height': 0
+                        'state': STATE_ASKING_HEIGHT,
+                        'height': STATE_INIT
                     }
                 )
             else:
                 table.put_item(
                     Item={
                         'id': "はじめ",
-                        'state': 0,
-                        'height': 0
+                        'state': STATE_INIT,
+                        'height': STATE_INIT
                     }
                 )
                 output_text = "不正な入力です"
